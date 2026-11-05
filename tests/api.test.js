@@ -30,7 +30,7 @@ test('characters: no matching results produce an empty list',async()=>{
 test('jokes: category filter, search and two-part joke',async()=>{
  const r=await invoke(jokes,'/api/jokes?type=Programming&search=code',async url=>{
  assert.match(url,/Programming/);assert.match(url,/contains=code/)
- return {ok:true,json:async()=>({jokes:[{id:2,category:'Programming',type:'twopart',setup:'Why?',delivery:'Because.'}]})}
+ return {ok:true,json:async()=>({jokes:[{id:2,category:'Programming',type:'twopart',setup:'Why?',delivery:'Because.',safe:true,flags:{}}]})}
  })
  assert.equal(r.body.jokes[0].delivery,'Because.')
 })
@@ -53,4 +53,9 @@ test('activities: no matching search yields an empty result',async()=>{
 test('activities: upstream outage falls back to curated suggestions',async()=>{
  const r=await invoke(activities,'/api/activities?type=social',async()=>{throw Error('offline')})
  assert.equal(r.statusCode,200);assert.equal(r.body.source,'curated suggestions');assert.ok(r.body.activities.length>0)
+})
+
+test('jokes: flagged content is excluded',async()=>{
+ const r=await invoke(jokes,'/api/jokes',async()=>({ok:true,json:async()=>({jokes:[{id:1,safe:false,flags:{nsfw:true}},{id:2,safe:true,flags:{nsfw:false}}]})}))
+ assert.deepEqual(r.body.jokes.map(j=>j.id),[2])
 })
